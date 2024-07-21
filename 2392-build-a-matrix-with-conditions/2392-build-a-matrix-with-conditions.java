@@ -1,91 +1,82 @@
 class Solution {
     public int[][] buildMatrix(int k, int[][] rowConditions, int[][] colConditions) {
-    List<Integer> row = topologicalSort(k, rowConditions);
-    List<Integer> col = topologicalSort(k, colConditions);
-    int[][] arr = new int[k][k];
+        int[] topoRow = new int[k];
+        int[] topoCol = new int[k];
 
-    // Debug prints for row and col
-    System.out.println("Topological sort (rows): " + row);
-    System.out.println("Topological sort (columns): " + col);
-    
-    if (row.size() == 0 || col.size() == 0) {
-        return new int[][]{};
-    }
+        int indegree1 [] = new int[k+1];
+        int indegree2 [] = new int[k+1];
 
-    Map<Integer, Integer> rowPosition = new HashMap<>();
-    Map<Integer, Integer> colPosition = new HashMap<>();
+        ArrayList<ArrayList<Integer>> adj1 = new ArrayList<>();
+        ArrayList<ArrayList<Integer>> adj2 = new ArrayList<>();
 
-    for (int i = 0; i < row.size(); i++) {
-        rowPosition.put(row.get(i), i);
-        System.out.println("rowPosition: " + row.get(i) + " -> " + i);
-    }
-
-    for (int i = 0; i < col.size(); i++) {
-        colPosition.put(col.get(i), i);
-        System.out.println("colPosition: " + col.get(i) + " -> " + i);
-    }
-
-    for (int i = 1; i <= k; i++) {
-        if (rowPosition.containsKey(i) && colPosition.containsKey(i)) {
-            int rowIndex = rowPosition.get(i);
-            int colIndex = colPosition.get(i);
-            System.out.println("Placing " + i + " at arr[" + rowIndex + "][" + colIndex + "]");
-            arr[rowIndex][colIndex] = i;
+        for(int i=0;i<=k;i++){
+            adj1.add(new ArrayList<>());
+            adj2.add(new ArrayList<>());
         }
-    }
 
-    return arr;
-}
+        
+        Queue<Integer> q = new LinkedList<>();
 
-    public List<Integer> topologicalSort(int k, int[][] conditions) {
-    Map<Integer, List<Integer>> graph = new HashMap<>();
-    Map<Integer, Integer> inDegree = new HashMap<>();
-    Set<Integer> nodes = new HashSet<>();
-
-    // Ensure all nodes from 1 to k are in the graph
-    for (int i = 1; i <= k; i++) {
-        graph.putIfAbsent(i, new ArrayList<>());
-        inDegree.putIfAbsent(i, 0);
-        nodes.add(i);
-    }
-
-    // Step 1: Create the adjacency list and in-degree count
-    for (int[] condition : conditions) {
-        int above = condition[0];
-        int below = condition[1];
-        graph.get(above).add(below);
-        inDegree.put(below, inDegree.get(below) + 1);
-    }
-
-    // Step 2: Initialize the queue with nodes having zero in-degree
-    Queue<Integer> queue = new LinkedList<>();
-    for (int node : nodes) {
-        if (inDegree.get(node) == 0) {
-            queue.offer(node);
+        for(int i=0;i<rowConditions.length;i++){
+            adj1.get(rowConditions[i][0]).add(rowConditions[i][1]);
+            indegree1[rowConditions[i][1]]++;
         }
-    }
 
-    List<Integer> topologicalOrder = new ArrayList<>();
+        for(int i=0;i<colConditions.length;i++){
+            adj2.get(colConditions[i][0]).add(colConditions[i][1]);
+            indegree2[colConditions[i][1]]++;
+        }
 
-    // Step 3: Process nodes in the queue
-    while (!queue.isEmpty()) {
-        int current = queue.poll();
-        topologicalOrder.add(current);
+        for(int i=1;i<indegree1.length;i++){
+            if(indegree1[i]==0) q.add(i);
+        }
 
-        for (int neighbor : graph.get(current)) {
-            inDegree.put(neighbor, inDegree.get(neighbor) - 1);
-            if (inDegree.get(neighbor) == 0) {
-                queue.offer(neighbor);
+        int idx1=0;
+        while(!q.isEmpty()){
+            int curr = q.poll();
+            topoRow[idx1++] = curr;
+
+            for(int neighbor : adj1.get(curr)){
+                indegree1[neighbor]--;
+                if(indegree1[neighbor]==0) q.add(neighbor);
             }
         }
+
+        for(int i=1;i<indegree2.length;i++){
+            if(indegree2[i]==0) q.add(i);
+        }
+
+        int idx2 = 0;
+        while(!q.isEmpty()){
+            int curr = q.poll();
+            topoCol[idx2++] = curr;
+
+            for(int neighbor : adj2.get(curr)){
+                indegree2[neighbor]--;
+                if(indegree2[neighbor]==0) q.add(neighbor);
+            }
+        }
+
+        
+
+        int[][] matrix = new int[k][k];
+        if(idx1!=k || idx2!=k) return new int[0][0];
+
+
+
+        for(int i=1;i<=k;i++){
+            matrix[indexOf(topoRow,i)][indexOf(topoCol,i)] = i;
+        }
+
+        return matrix;
     }
 
-    // If we have processed all nodes, return the order
-    if (topologicalOrder.size() == k) {
-        return topologicalOrder;
-    } else {
-        return Collections.emptyList();  // If there's a cycle or disconnected graph, return an empty list
+    public static int indexOf(int[] arr, int val) {
+        for (int i=0;i<arr.length;i++) {
+            if (arr[i] == val) {
+                return i;
+            }
+        }
+    return -1;
     }
 }
-
-    }
